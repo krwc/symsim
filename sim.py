@@ -56,8 +56,16 @@ def parse_edge(n1: str, n2: str, c: str):
     if c[0] not in SUPPORTED_COMPONENTS:
         raise ValueError("Unsupported component: %s" % c)
 
-    e = sympy.sympify(c)
-    return Edge(n1, n2, Element(e, e))
+    symbol = sympy.sympify(c)
+    # TODO: this is a very trivial impedance conversion. It requires
+    # more parsing validation.
+    value = c
+    if c[0] == 'L':
+        value = 's * {0}'.format(c)
+    elif c[0] == 'C':
+        value = '1 / (s * {0})'.format(c)
+
+    return Edge(n1, n2, Element(symbol, sympy.sympify(value)))
 
 
 class Network:
@@ -147,7 +155,7 @@ def solve_system(net: Network):
             else:
                 polarity = -1
 
-            if element.type == 'R':
+            if element.type in ('R', 'L', 'C'):
                 # Current flows into u, we thus have a factor:
                 # (Vv - Vu) * gx
                 g = 1 / element.value
