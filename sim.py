@@ -79,7 +79,7 @@ class Network:
     def add_edge(self, elem: Edge):
         if not isinstance(elem, Edge):
             raise ValueError(
-                "Only items of class Edge can be added to the EdgeSet")
+                "Only edges of class Edge can be added to the Network")
         elif elem in self._edges:
             return
 
