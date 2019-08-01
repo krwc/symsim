@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sympy
 import sys
 import collections
@@ -11,6 +13,8 @@ SUPPORTED_COMPONENTS = {
     'C',
     # Current source
     'I',
+    # Voltage source
+    'V'
 }
 
 
@@ -55,8 +59,8 @@ class EdgeSet(set):
 
         self._nodes.add(u)
         self._nodes.add(v)
-        self._incident_edges_of_node[u] += elem
-        self._incident_edges_of_node[v] += elem
+        self._incident_edges_of_node[u] += [elem]
+        self._incident_edges_of_node[v] += [elem]
         super().add(elem)
 
     def remove(self, elem):
@@ -92,40 +96,70 @@ def parse_network() -> EdgeSet:
     return edges
 
 
-def build_matrix(edges: EdgeSet):
+def element_type(symbol):
+    return str(symbol)[0]
+
+
+def solve_system(edges: EdgeSet):
     ground_node = edges.ground_node()
-    n = len(edges.unordered_nodes()) - 1
+
+    # Elem is either a node or a supernode (e.g. voltage source).
+    elem_index = dict()
+    for index, node in enumerate(edges.nonground_nodes()):
+        elem_index[node] = index
+
+    # Every voltage source introduces one unknown current through
+    # it, but also one additional equation, thus keeping the system
+    # solvable.
+    for edge in (e for e in edges if element_type(e.symbol) == 'V'):
+        elem_index[edge.symbol] = len(elem_index)
+
+    n = len(elem_index)
     G = sympy.zeros(n, n)
-    b = sympy.zeros(n)
+    b = sympy.zeros(n, 1)
 
     for row, node in enumerate(edges.nonground_nodes()):
         for edge in edges.incident_edges(node):
             u, v, symbol = edge
-            # Assume current always flows into our `node` we analyze.
-            if node == u:
-                flow_sign = +1
+            # From now on, assume `node` == u, and that the current through
+            # passive components always flows into that node.
+            if node == v:
+                polarity = +1
+                u, v = v, u
             else:
-                flow_sign = -1
+                polarity = -1
 
-        elem_type = str(symbol)[0]
-        elem_index = int(str(symbol)[1:])
-        if elem_type == 'R':
-            g = flow_sign * 1 / symbol
-            if u is not ground_node:
-                G[row][elem_index] += g
-            if v is not ground_node:
-                G[row][elem_index] -= g
-        elif elem_type == 'I':
-            b[elem_index] = flow_sign * symbol
-        else:
-            raise NotImplementedError
+            elem_type = element_type(symbol)
+            if elem_type == 'R':
+                # Current flows into u, we thus have a factor:
+                # (Vv - Vu) * gx
+                g = 1 / symbol
+                assert u != ground_node
+                G[row, elem_index[u]] -= g
+                if v is not ground_node:
+                    G[row, elem_index[v]] += g
+            elif elem_type == 'I':
+                b[elem_index[node]] = -symbol
+            elif elem_type == 'V':
+                G[row, elem_index[symbol]] = polarity
+                G[elem_index[symbol], elem_index[node]] = polarity
+                b[elem_index[symbol]] = symbol
+            else:
+                raise NotImplementedError
 
-    print(G)
-    print(b)
+    # print(G)
+    # print(b)
+
+    solution = G.LUsolve(b)
+    for x in elem_index:
+        if not isinstance(x, int):
+            continue
+        print('Voltage at node %d' % x, solution[elem_index[x]].simplify())
 
 
 def _main():
     net = parse_network()
+    solve_system(net)
 
 
 if __name__ == '__main__':
