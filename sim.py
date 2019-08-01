@@ -73,6 +73,8 @@ class Network:
         super().__init__()
         self._edges = set()
         self._nodes = set()
+        self._consts = set()
+        self._symbols = set()
         self._ground_node = None
         self._incident_edges_of_node = collections.defaultdict(list)
 
@@ -94,6 +96,18 @@ class Network:
         self._incident_edges_of_node[u] += [elem]
         self._incident_edges_of_node[v] += [elem]
         self._edges.add(elem)
+        self._symbols.add(elem.element.symbol)
+
+    def add_const(self, const: sympy.Symbol):
+        if not isinstance(const, sympy.Symbol):
+            raise ValueError(
+                "Only constants of class sympy.Symbol can be added to the Network")
+
+        if const in self._symbols:
+            raise ValueError(
+                "Constant %s is already an element symbol" % const)
+
+        self._consts.add(const)
 
     def unordered_nodes(self):
         return self._nodes
@@ -103,6 +117,9 @@ class Network:
 
     def edges(self):
         return self._edges
+
+    def consts(self):
+        return self._consts
 
     def nonground_nodes(self):
         return filter(lambda u: u != self.ground_node(), self.nodes())
@@ -119,9 +136,18 @@ class Network:
 def parse_network() -> Network:
     net = Network()
     for line in sys.stdin:
-        items = line.strip().split()
-        if len(items) == 3:
-            net.add_edge(parse_edge(*items))
+        line = line.strip()
+
+        if line.startswith('const'):
+            items = line.split()
+            if len(items) > 2:
+                raise ValueError(
+                    "Constant names with spaces are not supported")
+            net.add_const(sympy.sympify(items[-1]))
+        else:
+            items = line.split()
+            if len(items) == 3:
+                net.add_edge(parse_edge(*items))
 
     return net
 
