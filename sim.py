@@ -68,6 +68,23 @@ def parse_edge(n1: str, n2: str, c: str):
     return Edge(n1, n2, Element(symbol, sympy.sympify(value)))
 
 
+def parse_dependent_source(n1: str, n2: str, name: str, *defn):
+    """
+    Format of the dependent source edge is (where {V,I} means either V or I):
+
+        n1 n2 {Vx,Ix} expression
+    """
+    n1 = int(n1)
+    n2 = int(n2)
+
+    if name[0] not in ('V', 'I'):
+        raise ValueError(
+            "Dependent source can either be a voltage or current source")
+
+    symbol = sympy.sympify(name)
+    return Edge(n1, n2, Element(symbol, sympy.sympify(''.join(defn))))
+
+
 class Network:
     def __init__(self):
         super().__init__()
@@ -138,6 +155,9 @@ def parse_network() -> Network:
     for line in sys.stdin:
         line = line.strip()
 
+        if len(line) == 0:
+            continue
+
         if line.startswith('const'):
             items = line.split()
             if len(items) > 2:
@@ -148,6 +168,10 @@ def parse_network() -> Network:
             items = line.split()
             if len(items) == 3:
                 net.add_edge(parse_edge(*items))
+            elif len(items) >= 4:
+                net.add_edge(parse_dependent_source(*items))
+            else:
+                raise ValueError("Unrecognized command: %s" % line)
 
     return net
 
@@ -194,7 +218,7 @@ def solve_system(net: Network):
             elif element.type == 'V':
                 G[row, elem_index[element.symbol]] = polarity
                 G[elem_index[element.symbol], elem_index[node]] = polarity
-                b[elem_index[element.symbol]] = element.symbol
+                b[elem_index[element.symbol]] = element.value
             else:
                 raise NotImplementedError
 
