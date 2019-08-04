@@ -3,6 +3,7 @@
 import sympy
 import sys
 import collections
+import io
 
 SUPPORTED_COMPONENTS = {
     # Resistor
@@ -150,9 +151,9 @@ class Network:
         return self._incident_edges_of_node[node]
 
 
-def parse_network() -> Network:
+def parse_network(input: str = None) -> Network:
     net = Network()
-    for line in sys.stdin:
+    for line in (io.StringIO(input) if input else sys.stdin):
         line = line.strip()
 
         if len(line) == 0:
@@ -230,6 +231,8 @@ def solve_system(net: Network):
         if not isinstance(x, int):
             continue
         print('Voltage at node %d' % x, solution[elem_index[x]].simplify())
+
+    return solution, elem_index
 
 
 def _main():

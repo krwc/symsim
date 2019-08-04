@@ -1,4 +1,0 @@
-const Vx
-
-0 1 V1 3*Vx
-0 1 R1
