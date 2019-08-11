@@ -35,10 +35,13 @@ def parse_edge(line: str) -> net.Edge:
     """
     Every edge has the following form:
 
-        nx ny {R,L,C,I,V}\w+ [optional expression representing value (unsupported now)]
+        nx ny {R,L,C,I,V}\w+ [dependent source value]
+
+    '[dependent source value]' is optional, and if not provided the source
+    will be independent one.
     """
     items = line.split()
-    if len(items) != 3:
+    if len(items) not in (3, 4):
         raise ValueError('Unrecognized format of an edge')
 
     n1 = int(items[0])
@@ -48,7 +51,21 @@ def parse_edge(line: str) -> net.Edge:
     if type not in SUPPORTED_COMPONENTS:
         raise ValueError('Unsupported component: %s' % c)
 
-    return net.Edge(n1, n2, SUPPORTED_COMPONENTS[type](name))
+    elem_class = SUPPORTED_COMPONENTS[type]
+    ctor_args = [ name ]
+    if len(items) == 4:
+        if issubclass(elem_class, elem.Passive):
+            raise ValueError('Passives with dependent values are not supported')
+        # dependent voltage / current source
+        if elem_class == elem.CurrentSource:
+            elem_class = elem.DependentCurrentSource
+        elif elem_class == elem.VoltageSource:
+            elem_class = elem.DependentVoltageSource
+        else:
+            raise ValueError('Unsupported dependent source')
+        ctor_args.append(items[-1])
+
+    return net.Edge(n1, n2, elem_class(*ctor_args))
 
 def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
     result = net.Network()

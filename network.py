@@ -14,7 +14,6 @@ class Network:
         self._edges = set()
         self._nodes = set()
         self._consts = set()
-        self._vars = dict()
         self._symbols = set()
         self._ground_node = None
         self._incident_edges_of_node = collections.defaultdict(list)
@@ -50,16 +49,6 @@ class Network:
 
         self._consts.add(const)
 
-    def add_var(self, var: elem.Element, u: int, v: int):
-        if not isinstance(var, elem.Element):
-            raise ValueError(
-                "Only variables of class Element can be added to the Network")
-
-        if var in self._vars:
-            raise ValueError("Variable %s is already defined" % var)
-
-        self._vars[var] = (u, v)
-
     @property
     def nodes(self):
         return sorted(self._nodes, key=str)
@@ -71,10 +60,6 @@ class Network:
     @property
     def consts(self):
         return self._consts
-
-    @property
-    def vars(self):
-        return self._vars
 
     @property
     def nonground_nodes(self):

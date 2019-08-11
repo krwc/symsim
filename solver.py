@@ -18,11 +18,6 @@ def solve_system(net: Network):
     for edge in (e for e in net.edges if isinstance(e.element, elem.VoltageSource)):
         elem_index[edge.element.symbol] = len(elem_index)
 
-    # Every measured variable adds another unknown, for which a solution
-    # is known (its either a voltage difference, or a current).
-    # for var in net.vars:
-    #    elem_index[var.symbol] = len(elem_index)
-
     n = len(elem_index)
     G = sympy.zeros(n, n)
     b = sympy.zeros(n, 1)
@@ -56,15 +51,6 @@ def solve_system(net: Network):
                 b[elem_index[element.symbol]] = element.value
             else:
                 raise NotImplementedError
-
-    """
-    for var in net.vars:
-        if var.type == 'V':
-            # we compute current
-            G[]
-        pass
-    """
-    # print(G)
 
     solution = G.LUsolve(b)
     voltage_per_node = {}

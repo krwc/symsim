@@ -21,6 +21,19 @@ class Passive(Element):
         raise NotImplementedError
 
 
+class Source(Element):
+    @property
+    def value(self) -> sympy.Symbol:
+        """
+        Symbolic expression for the value of the source. E.g. in case of
+        trivial sources, it'd be the same as the source symbol.
+
+        For dependent sources, it'd return the expression that represents
+        the value of the source.
+        """
+        raise NotImplementedError
+
+
 class Resistor(Passive):
     def __init__(self, name: str):
         super().__init__(name)
@@ -48,7 +61,7 @@ class Inductor(Passive):
         return sympy.symbols('s') * self.symbol
 
 
-class CurrentSource(Passive):
+class CurrentSource(Source):
     def __init__(self, name: str):
         super().__init__(name)
 
@@ -61,7 +74,7 @@ class CurrentSource(Passive):
         return sympy.common.S.Infinity
 
 
-class VoltageSource(Passive):
+class VoltageSource(Source):
     def __init__(self, name: str):
         super().__init__(name)
 
@@ -73,3 +86,22 @@ class VoltageSource(Passive):
     def impedance(self):
         return 0
 
+
+class DependentVoltageSource(VoltageSource):
+    def __init__(self, name: str, value: str):
+        super().__init__(name)
+        self._value = sympy.sympify(value)
+
+    @property
+    def value(self):
+        return self._value
+
+
+class DependentCurrentSource(Source):
+    def __init__(self, name: str, value: str):
+        super().__init__(name)
+        self._value = sympy.sympify(value)
+
+    @property
+    def value(self):
+        return self._value
