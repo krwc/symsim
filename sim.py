@@ -17,13 +17,6 @@ SUPPORTED_COMPONENTS = {
     'V': elem.VoltageSource,
 }
 
-def parse_const(line: str) -> sympy.Symbol:
-    assert line.startswith('const')
-    if len(line.split()) > 2:
-        raise ValueError('Constants with spaces in names are not supported.')
-    return sympy.sympify(line[len('const'):])
-
-
 def parse_print(line: str) -> sympy.Symbol:
     assert line.startswith('print')
     if len(line.split()) < 2:
@@ -82,9 +75,7 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
             continue
 
         try:
-            if line.startswith('const'):
-                result.add_const(parse_const(line))
-            elif line.startswith('print'):
+            if line.startswith('print'):
                 print_commands.append(parse_print(line))
             else:
                 result.add_edge(parse_edge(line))

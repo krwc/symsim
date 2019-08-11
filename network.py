@@ -13,7 +13,6 @@ class Network:
         super().__init__()
         self._edges = set()
         self._nodes = set()
-        self._consts = set()
         self._symbols = set()
         self._ground_node = None
         self._incident_edges_of_node = collections.defaultdict(list)
@@ -38,17 +37,6 @@ class Network:
         self._edges.add(elem)
         self._symbols.add(elem.element.symbol)
 
-    def add_const(self, const: sympy.Symbol):
-        if not isinstance(const, sympy.Symbol):
-            raise ValueError(
-                "Only constants of class sympy.Symbol can be added to the Network")
-
-        if const in self._symbols:
-            raise ValueError(
-                "Constant %s is already an element symbol" % const)
-
-        self._consts.add(const)
-
     @property
     def nodes(self):
         return sorted(self._nodes, key=str)
@@ -56,10 +44,6 @@ class Network:
     @property
     def edges(self):
         return self._edges
-
-    @property
-    def consts(self):
-        return self._consts
 
     @property
     def nonground_nodes(self):
