@@ -87,10 +87,15 @@ class VoltageSource(Source):
         return 0
 
 
+NAMESPACE = {
+    'I': sympy.Function('I'),
+    'V': sympy.Function('V'),
+}
+
 class DependentVoltageSource(VoltageSource):
     def __init__(self, name: str, value: str):
         super().__init__(name)
-        self._value = sympy.sympify(value)
+        self._value = sympy.sympify(value, locals=NAMESPACE)
 
     @property
     def value(self):
@@ -100,7 +105,7 @@ class DependentVoltageSource(VoltageSource):
 class DependentCurrentSource(Source):
     def __init__(self, name: str, value: str):
         super().__init__(name)
-        self._value = sympy.sympify(value)
+        self._value = sympy.sympify(value, locals=NAMESPACE)
 
     @property
     def value(self):

@@ -80,16 +80,14 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
             else:
                 result.add_edge(parse_edge(line))
         except ValueError as e:
-            print('Parse error at line %d:' % (i + 1))
-            print(e)
+            print('Parse error at line %d: %s' % (i + 1, e))
 
     return result, print_commands
 
 
 def _main():
     net, prints = parse_network()
-    #solution = solver.solve_system(net)
-    """
+    solution = solver.solve_system(net)
     substitutions = {}
     for node in solution:
         substitutions[sympy.sympify(
@@ -98,7 +96,6 @@ def _main():
     for p in prints:
         result = p.subs(substitutions)
         print('%s =' % p, result.simplify())
-    """
 
 if __name__ == '__main__':
     _main()

@@ -37,6 +37,12 @@ class Network:
         self._edges.add(elem)
         self._symbols.add(elem.element.symbol)
 
+    def find_edge_by_elem_symbol(self, symbol: sympy.Symbol) -> Edge:
+        for edge in self.edges:
+            if edge.element.symbol == symbol:
+                return edge
+        return None
+
     @property
     def nodes(self):
         return sorted(self._nodes, key=str)

@@ -15,7 +15,7 @@ def solve_system(net: Network):
     # Every voltage source introduces one unknown current through
     # it, but also one additional equation, thus keeping the system
     # solvable.
-    for edge in (e for e in net.edges if isinstance(e.element, elem.VoltageSource)):
+    for edge in (e for e in net.edges if e.element.__class__ == elem.VoltageSource):
         elem_index[edge.element.symbol] = len(elem_index)
 
     n = len(elem_index)
@@ -44,11 +44,45 @@ def solve_system(net: Network):
                 if v is not ground_node:
                     G[row, elem_index[v]] += g
             elif element.__class__ == elem.CurrentSource:
-                b[elem_index[node]] = -polarity * element.value
+                b[elem_index[node]] += -polarity * element.value
             elif element.__class__ == elem.VoltageSource:
                 G[row, elem_index[element.symbol]] = polarity
                 G[elem_index[element.symbol], elem_index[node]] = polarity
                 b[elem_index[element.symbol]] = element.value
+            elif element.__class__ == elem.DependentCurrentSource:
+                expanded = element.value.expand()
+                terms = expanded.as_terms()[-1]
+                for term in terms:
+                    if not term.is_Function:
+                        continue
+                    if not term.name in ('I', 'V'):
+                        raise ValueError('Unknown function %s' % term.name)
+                    if len(term.args) != 1:
+                        raise ValueError(
+                                'Expected at most 1 argument to function %s' % term.name)
+
+                    edge = net.find_edge_by_elem_symbol(term.args[0])
+                    if not edge:
+                        raise ValueError(
+                                'Reference to an unknown element %s' % term.args[0])
+
+                    u, v, symbol = edge
+
+                    if not symbol.__class__ in (elem.Resistor, elem.Inductor, elem.Capacitor):
+                        raise ValueError('Expected R, L, or C')
+
+                    if term.name == 'I':
+                        # i = (V_u - V_v) / Z * coeffcient
+                        # i = coeff/Z * V_u - coeff/Z * V_v
+                        g = expanded.coeff(term) / symbol.impedance
+                    else:
+                        # i = (V_u - V_z) * coefficient
+                        g = expanded.coeff(term)
+
+                    if u is not ground_node:
+                        G[row, elem_index[u]] += g
+                    if v is not ground_node:
+                        G[row, elem_index[v]] -= g
             else:
                 raise NotImplementedError
 
@@ -59,5 +93,7 @@ def solve_system(net: Network):
             continue
         voltage_per_node[x] = solution[elem_index[x]].simplify()
 
+    print(solution)
+    print(elem_index)
     return voltage_per_node
 
