@@ -87,26 +87,44 @@ class VoltageSource(Source):
         return 0
 
 
-NAMESPACE = {
+DEPENDENT_VARS = {
     'I': sympy.Function('I'),
     'V': sympy.Function('V'),
 }
 
-class DependentVoltageSource(VoltageSource):
-    def __init__(self, name: str, value: str):
-        super().__init__(name)
-        self._value = sympy.sympify(value, locals=NAMESPACE)
+class DependentValue:
+    class Current:
+        def __init__(self, element: Element):
+            if not isinstance(element, Passive) and \
+                not isinstance(element, CurrentSource):
+                raise ValueError('Current can be measured only on passive devices and current sources')
+            self.symbol = element.symbol
 
-    @property
-    def value(self):
-        return self._value
-
+    class Voltage:
+        def __init__(self, element: Element):
+            if not isinstance(element, Passive) and \
+                not isinstance(element, VoltageSource):
+                raise ValueError('Voltage can be measured only on passive devices and voltage sources')
+            self.symbol = element.symbol
 
 class DependentCurrentSource(Source):
-    def __init__(self, name: str, value: str):
+    def __init__(self, name: str, dependent_value: DependentValue, scaling_factor: str = '1'):
         super().__init__(name)
-        self._value = sympy.sympify(value, locals=NAMESPACE)
+        self._dependent_value = dependent_value
+        self._scaling_factor = sympy.sympify(scaling_factor)
 
     @property
-    def value(self):
-        return self._value
+    def dependent_value(self):
+        return self._dependent_value
+
+    @property
+    def scaling_factor(self):
+        return self._scaling_factor
+
+    @property
+    def voltage_controlled(self):
+        return isinstance(self.dependent_value, DependentValue.Voltage)
+
+    @property
+    def current_controlled(self):
+        return isinstance(self.dependent_value, DependentValue.Current)

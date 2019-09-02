@@ -4,6 +4,7 @@ import sympy
 import sys
 import collections
 import io
+import re
 
 import elements as elem
 import network as net
@@ -15,26 +16,27 @@ SUPPORTED_COMPONENTS = {
     'C': elem.Capacitor,
     'I': elem.CurrentSource,
     'V': elem.VoltageSource,
+    'G': elem.DependentCurrentSource,
 }
 
-def parse_print(line: str) -> sympy.Symbol:
+def parse_print(line: str) -> str:
     assert line.startswith('print')
     if len(line.split()) < 2:
         raise ValueError('`print` command without argument.')
-    return sympy.sympify(line[len('print'):])
+    return line[len('print'):]
 
 
 def parse_edge(line: str) -> net.Edge:
     """
     Every edge has the following form:
 
-        nx ny {R,L,C,I,V}\w+ [dependent source value]
+        nx ny {R,L,C,I,V,G}\w+ [dependent value] [constant scaling factor = 1]
 
-    '[dependent source value]' is optional, and if not provided the source
-    will be independent one.
+    Where the '[dependent value]' may be of form either 'I(some element)', or
+    'V(some element)'.
     """
     items = line.split()
-    if len(items) not in (3, 4):
+    if len(items) not in (3, 4, 5):
         raise ValueError('Unrecognized format of an edge')
 
     n1 = int(items[0])
@@ -46,17 +48,33 @@ def parse_edge(line: str) -> net.Edge:
 
     elem_class = SUPPORTED_COMPONENTS[type]
     ctor_args = [ name ]
-    if len(items) == 4:
+    if len(items) in (4, 5):
         if issubclass(elem_class, elem.Passive):
             raise ValueError('Passives with dependent values are not supported')
-        # dependent voltage / current source
-        if elem_class == elem.CurrentSource:
-            elem_class = elem.DependentCurrentSource
-        elif elem_class == elem.VoltageSource:
-            elem_class = elem.DependentVoltageSource
+        assert elem_class == elem.DependentCurrentSource
+
+        if len(items) == 4:
+            dependent_value = items[-1]
         else:
-            raise ValueError('Unsupported dependent source')
-        ctor_args.append(items[-1])
+            dependent_value = items[-2]
+
+        # allow only I(element) or V(element).
+        match = re.match(r'^[IV]\((.+)\)$', dependent_value)
+        if not match:
+            raise ValueError('Controlling value may be either I(element) or V(element)')
+        element = match.group(1)
+        if not element[0] in SUPPORTED_COMPONENTS:
+            raise ValueError('Unknown element type %s' % element)
+
+        element = SUPPORTED_COMPONENTS[element[0]](element)
+        # append controlling value
+        if match.group(0)[0] == 'I':
+            ctor_args.append(elem.DependentValue.Current(element))
+        elif match.group(0)[0] == 'V':
+            ctor_args.append(elem.DependentValue.Voltage(element))
+        # append scaling factor if any
+        if len(items) == 5:
+            ctor_args.append(items[-1])
 
     return net.Edge(n1, n2, elem_class(*ctor_args))
 
@@ -87,15 +105,24 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
 
 def _main():
     net, prints = parse_network()
-    solution = solver.solve_system(net)
+    voltages, currents = solver.solve_system(net)
     substitutions = {}
-    for node in solution:
-        substitutions[sympy.sympify(
-            'V{0}'.format(node))] = solution[node]
 
+    def I(symbol):
+        if symbol in currents:
+            return currents[symbol]
+        raise ValueError("No current information for %s" % symbol)
+
+    def V(node):
+        return voltages[node]
+
+    locals = {
+        'I': I,
+        'V': V,
+    }
     for p in prints:
-        result = p.subs(substitutions)
-        print('%s =' % p, result.simplify())
+        result = sympy.sympify(p, locals=locals)
+        print('%s =' % p, result.expand().simplify())
 
 if __name__ == '__main__':
     _main()

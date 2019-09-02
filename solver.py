@@ -33,9 +33,7 @@ def solve_system(net: Network):
             else:
                 polarity = -1
 
-            if element.__class__ in (elem.Resistor,
-                                     elem.Inductor,
-                                     elem.Capacitor):
+            if isinstance(element, elem.Passive):
                 # Current flows into u, we thus have a factor:
                 # (Vv - Vu) * gx
                 g = 1 / element.impedance
@@ -43,57 +41,65 @@ def solve_system(net: Network):
                 G[row, elem_index[u]] -= g
                 if v is not ground_node:
                     G[row, elem_index[v]] += g
-            elif element.__class__ == elem.CurrentSource:
+            elif isinstance(element, elem.CurrentSource):
                 b[elem_index[node]] += -polarity * element.value
-            elif element.__class__ == elem.VoltageSource:
+            elif isinstance(element, elem.VoltageSource):
                 G[row, elem_index[element.symbol]] = polarity
                 G[elem_index[element.symbol], elem_index[node]] = polarity
                 b[elem_index[element.symbol]] = element.value
-            elif element.__class__ == elem.DependentCurrentSource:
-                expanded = element.value.expand()
-                terms = expanded.as_terms()[-1]
-                for term in terms:
-                    if not term.is_Function:
-                        continue
-                    if not term.name in ('I', 'V'):
-                        raise ValueError('Unknown function %s' % term.name)
-                    if len(term.args) != 1:
-                        raise ValueError(
-                                'Expected at most 1 argument to function %s' % term.name)
+            elif isinstance(element, elem.DependentCurrentSource):
+                edge = net.find_edge_by_elem_symbol(element.dependent_value.symbol)
+                if not edge:
+                    raise ValueError('Reference to an unknown element %s' % element.dependent_value)
 
-                    edge = net.find_edge_by_elem_symbol(term.args[0])
-                    if not edge:
-                        raise ValueError(
-                                'Reference to an unknown element %s' % term.args[0])
+                u, v, symbol = edge
+                # TODO: support sources.
+                assert isinstance(symbol, elem.Passive)
 
-                    u, v, symbol = edge
+                if element.current_controlled:
+                    # i = (V_u - V_v) / Z * coeffcient
+                    # i = coeff/Z * V_u - coeff/Z * V_v
+                    g = element.scaling_factor / symbol.impedance
+                else:
+                    assert element.voltage_controlled
+                    # i = (V_u - V_z) * coefficient
+                    g = element.scaling_factor
 
-                    if not symbol.__class__ in (elem.Resistor, elem.Inductor, elem.Capacitor):
-                        raise ValueError('Expected R, L, or C')
-
-                    if term.name == 'I':
-                        # i = (V_u - V_v) / Z * coeffcient
-                        # i = coeff/Z * V_u - coeff/Z * V_v
-                        g = expanded.coeff(term) / symbol.impedance
-                    else:
-                        # i = (V_u - V_z) * coefficient
-                        g = expanded.coeff(term)
-
-                    if u is not ground_node:
-                        G[row, elem_index[u]] += g
-                    if v is not ground_node:
-                        G[row, elem_index[v]] -= g
+                if u is not ground_node:
+                    G[row, elem_index[u]] += g
+                if v is not ground_node:
+                    G[row, elem_index[v]] -= g
             else:
                 raise NotImplementedError
 
     solution = G.LUsolve(b)
     voltage_per_node = {}
+    voltage_per_node[net.ground_node] = 0
     for x in elem_index:
         if not isinstance(x, int):
             continue
         voltage_per_node[x] = solution[elem_index[x]].simplify()
 
-    print(solution)
-    print(elem_index)
-    return voltage_per_node
+    current_per_symbol = {}
+    for edge in net.edges:
+        u, v, element = edge
+
+        if isinstance(element, elem.Resistor) or \
+            isinstance(element, elem.Inductor) or \
+            isinstance(element, elem.Capacitor):
+            current_per_symbol[element.symbol] = (voltage_per_node[u] - voltage_per_node[v]) / element.impedance
+        elif isinstance(element, elem.CurrentSource):
+            current_per_symbol[element.symbol] = element.value
+        elif isinstance(element, elem.VoltageSource):
+            current_per_symbol[element.symbol] = solution[elem_index[element.symbol]]
+        elif isinstance(element, elem.DependentCurrentSource):
+            pass
+
+    for node in voltage_per_node:
+        print('V[%d] => %s' % (node, voltage_per_node[node]))
+
+    for sym in current_per_symbol:
+        print('I(%s) => %s' % (sym, current_per_symbol[sym]))
+
+    return voltage_per_node, current_per_symbol
 
