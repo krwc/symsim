@@ -99,6 +99,7 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
                 result.add_edge(parse_edge(line))
         except ValueError as e:
             print('Parse error at line %d:\n>> %s\n%s' % (i + 1, line, e))
+            raise
 
     return result, print_commands
 
@@ -116,13 +117,24 @@ def _main():
     def V(node):
         return voltages[node]
 
+    from tabulate import tabulate
+    table_headers = ['Quantity', 'Value']
+    table_rows = []
+    for node in voltages:
+        table_rows.append(['V(%d)' % node, voltages[node].expand().simplify()])
+
+    for sym in currents:
+        table_rows.append(['I(%s)' % sym, currents[sym].expand().simplify()])
+
     locals = {
         'I': I,
         'V': V,
     }
     for p in prints:
         result = sympy.sympify(p, locals=locals)
-        print('%s =' % p, result.expand().simplify())
+        table_rows.append(['%s' % p, result.expand().simplify()])
+
+    print(tabulate(table_rows, table_headers, tablefmt='psql'))
 
 if __name__ == '__main__':
     _main()

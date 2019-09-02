@@ -74,7 +74,8 @@ def solve_system(net: Network):
 
     solution = G.LUsolve(b)
     voltage_per_node = {}
-    voltage_per_node[net.ground_node] = 0
+    voltage_per_node[net.ground_node] = sympy.sympify('0')
+
     for x in elem_index:
         if not isinstance(x, int):
             continue
@@ -94,12 +95,6 @@ def solve_system(net: Network):
             current_per_symbol[element.symbol] = solution[elem_index[element.symbol]]
         elif isinstance(element, elem.DependentCurrentSource):
             pass
-
-    for node in voltage_per_node:
-        print('V[%d] => %s' % (node, voltage_per_node[node]))
-
-    for sym in current_per_symbol:
-        print('I(%s) => %s' % (sym, current_per_symbol[sym]))
 
     return voltage_per_node, current_per_symbol
 
