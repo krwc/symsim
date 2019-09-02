@@ -78,40 +78,5 @@ class VoltageSourceRlc(Test.Base):
     OUT = {1: "-L1*V3*s/(L1*s + R2*(C1*L1*s**2 + 1))",
            2: "R2*V3*(C1*L1*s**2 + 1)/(L1*s + R2*(C1*L1*s**2 + 1))"}
 
-
-class ConstantAndNoSource(Test.Base):
-    IN = """
-    const gm
-
-    0 1 R1
-    """
-
-    OUT = {1: '0'}
-
-
-#class ConstantVoltageSource(Test.Base):
-#    IN = """
-#    const Vx
-#
-#    0 1 V1 3*Vx
-#    0 1 R1
-#    """
-#
-#    OUT = {1: "3 * Vx"}
-#
-#
-#class DependentCurrentSource(Test.Base):
-#    IN = """
-#    const gm
-#    var Vx 2 0
-#
-#    0 1 R1
-#    1 0 Ic gm*Vx
-#
-#    2 0 R2
-#    0 2 Vin
-#    """
-#
-#
 if __name__ == '__main__':
     unittest.main()
