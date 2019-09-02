@@ -16,7 +16,7 @@ class Test:
 
         def runTest(self):
             net, _ = sim.parse_network(self.IN)
-            v_out = solver.solve_system(net)
+            v_out, _ = solver.solve_system(net)
 
             for node, value in self.OUT.items():
                 self.assertEqual(v_out[node].simplify(),

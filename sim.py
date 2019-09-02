@@ -98,7 +98,7 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
             else:
                 result.add_edge(parse_edge(line))
         except ValueError as e:
-            print('Parse error at line %d: %s' % (i + 1, e))
+            print('Parse error at line %d:\n>> %s\n%s' % (i + 1, line, e))
 
     return result, print_commands
 
