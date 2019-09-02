@@ -14,5 +14,5 @@ TODO
 # How does it work?
 
 It just solves some nodal equations symbolically with the help of
-(SymPy)[https://www.sympy.org/en/index.html].
+[SymPy](https://www.sympy.org/en/index.html).
 
