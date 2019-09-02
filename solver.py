@@ -85,9 +85,7 @@ def solve_system(net: Network):
     for edge in net.edges:
         u, v, element = edge
 
-        if isinstance(element, elem.Resistor) or \
-            isinstance(element, elem.Inductor) or \
-            isinstance(element, elem.Capacitor):
+        if isinstance(element, elem.Passive):
             current_per_symbol[element.symbol] = (voltage_per_node[u] - voltage_per_node[v]) / element.impedance
         elif isinstance(element, elem.CurrentSource):
             current_per_symbol[element.symbol] = element.value
