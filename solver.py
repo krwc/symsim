@@ -15,7 +15,7 @@ def solve_system(net: Network):
     # Every voltage source introduces one unknown current through
     # it, but also one additional equation, thus keeping the system
     # solvable.
-    for edge in (e for e in net.edges if e.element.__class__ == elem.VoltageSource):
+    for edge in (e for e in net.edges if isinstance(e.element, elem.VoltageSource)):
         elem_index[edge.element.symbol] = len(elem_index)
 
     n = len(elem_index)
