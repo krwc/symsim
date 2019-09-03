@@ -25,56 +25,47 @@ def parse_print(line: str) -> str:
         raise ValueError('`print` command without argument.')
     return line[len('print'):]
 
+def get_element_class(element: str) -> elem.Element:
+    if not element[0].upper() in SUPPORTED_COMPONENTS:
+        raise ValueError('Unsupported element: %s' % element)
+
+    return SUPPORTED_COMPONENTS[element[0].upper()]
 
 def parse_edge(line: str) -> net.Edge:
     """
     Every edge has the following form:
 
-        nx ny {R,L,C,I,V,G}\w+ [dependent value] [constant scaling factor = 1]
+        {R,L,C,I,V,G}\w+ nx ny [dependent value] [constant scaling factor = 1]
 
     Where the '[dependent value]' may be of form either 'I(some element)', or
     'V(some element)'.
     """
     items = line.split()
-    if len(items) not in (3, 4, 5):
-        raise ValueError('Unrecognized format of an edge')
-
-    n1 = int(items[0])
-    n2 = int(items[1])
-    name = items[2]
-    type = name[0]
-    if type not in SUPPORTED_COMPONENTS:
-        raise ValueError('Unsupported component: %s' % c)
-
-    elem_class = SUPPORTED_COMPONENTS[type]
+    name = items[0]
+    n1 = int(items[1])
+    n2 = int(items[2])
+    elem_class = get_element_class(name)
     ctor_args = [ name ]
-    if len(items) in (4, 5):
-        if issubclass(elem_class, elem.Passive):
-            raise ValueError('Passives with dependent values are not supported')
-        assert elem_class == elem.DependentCurrentSource
 
-        if len(items) == 4:
-            dependent_value = items[-1]
-        else:
-            dependent_value = items[-2]
+    if elem_class == elem.DependentCurrentSource:
+        if len(items) < 4:
+            raise ValueError('Incorrect format of a dependent current source')
 
-        # allow only I(element) or V(element).
-        match = re.match(r'^[IV]\((.+)\)$', dependent_value)
+        # allow only [IV](something) scaling-expr
+        match = re.match(r'^[IV]\((.+?)\)\s+(.+)$', ' '.join(items[3:]))
         if not match:
-            raise ValueError('Controlling value may be either I(element) or V(element)')
-        element = match.group(1)
-        if not element[0] in SUPPORTED_COMPONENTS:
-            raise ValueError('Unknown element type %s' % element)
+            raise ValueError('Bad format of controlling value and/or scaling factor')
 
-        element = SUPPORTED_COMPONENTS[element[0]](element)
+        element = match.group(1).strip()
+        scaling_factor = match.group(2).strip()
+        element_instance = get_element_class(element)(element)
         # append controlling value
-        if match.group(0)[0] == 'I':
-            ctor_args.append(elem.DependentValue.Current(element))
-        elif match.group(0)[0] == 'V':
-            ctor_args.append(elem.DependentValue.Voltage(element))
-        # append scaling factor if any
-        if len(items) == 5:
-            ctor_args.append(items[-1])
+        if items[3][0] == 'I':
+            ctor_args.append(elem.DependentValue.Current(element_instance))
+        elif items[3][0] == 'V':
+            ctor_args.append(elem.DependentValue.Voltage(element_instance))
+
+        ctor_args.append(scaling_factor)
 
     return net.Edge(n1, n2, elem_class(*ctor_args))
 
