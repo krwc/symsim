@@ -78,5 +78,13 @@ class VoltageSourceRlc(Test.Base):
     OUT = {1: "-L1*V3*s/(L1*s + R2*(C1*L1*s**2 + 1))",
            2: "R2*V3*(C1*L1*s**2 + 1)/(L1*s + R2*(C1*L1*s**2 + 1))"}
 
+class SmallCaseNames(Test.Base):
+    IN = """
+    r1 0 1
+    v1 0 1
+    """
+
+    OUT = {1: 'v1'}
+
 if __name__ == '__main__':
     unittest.main()
