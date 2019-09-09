@@ -2,7 +2,6 @@ import unittest
 import sympy
 
 import network as net
-import elements as elem
 import solver
 import sim
 

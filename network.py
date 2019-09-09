@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 import collections
 import sympy
+import enum
 
-import elements as elem
-
-class Edge(collections.namedtuple('Edge', ['u', 'v', 'element'])):
-    def __new__(cls, u, v, element: elem.Element):
-        assert isinstance(element, elem.Element)
-        self = super().__new__(cls, str(u), str(v), element)
-        return self
-
+from internal import elements as elem
+from internal.edge import Edge
 
 class Network:
     def __init__(self):
@@ -19,21 +14,51 @@ class Network:
         self._symbols = set()
         self._incident_edges_of_node = collections.defaultdict(list)
 
-    def add_edge(self, elem: Edge):
-        if not isinstance(elem, Edge):
-            raise ValueError(
-                "Only edges of class Edge can be added to the Network")
-        elif elem in self._edges:
+    def _add_edge(self, n1, n2, element: elem.Element):
+        edge = Edge(n1, n2, element)
+
+        if edge in self._edges:
             return
 
-        u, v, _ = elem
+        self._nodes.add(n1)
+        self._nodes.add(n2)
+        self._incident_edges_of_node[n1] += [edge]
+        self._incident_edges_of_node[n2] += [edge]
+        self._edges.add(edge)
+        self._symbols.add(edge.element.symbol)
 
-        self._nodes.add(u)
-        self._nodes.add(v)
-        self._incident_edges_of_node[u] += [elem]
-        self._incident_edges_of_node[v] += [elem]
-        self._edges.add(elem)
-        self._symbols.add(elem.element.symbol)
+    def add_resistor(self, n1, n2, name):
+        self._add_edge(n1, n2, elem.Resistor(name))
+
+    def add_capacitor(self, n1, n2, name):
+        self._add_edge(n1, n2, elem.Capacitor(name))
+
+    def add_inductor(self, n1, n2, name):
+        self._add_edge(n1, n2, elem.Inductor(name))
+
+    def add_voltage_source(self, n1, n2, name):
+        self._add_edge(n1, n2, elem.VoltageSource(name))
+
+    def add_current_source(self, n1, n2, name):
+        self._add_edge(n1, n2, elem.CurrentSource(name))
+
+    class Quantity(enum.Enum):
+        CURRENT = enum.auto()
+        VOLTAGE = enum.auto()
+
+    def add_dependent_current_source(self, n1, n2, name,
+                                     controlling_quantity: Quantity,
+                                     controlling_element: str,
+                                     scaling_factor: float = 1.0):
+        ctor = None
+        if controlling_quantity == Quantity.CURRENT:
+            ctor = elem.CurrentControlledCurrentSource
+        elif controlling_quantity == Quantity.VOLTAGE:
+            ctor = elem.VoltageControlledCurrentSource
+        else:
+            raise ValueError('Expected either Quantity.CURRENT or Quantity.VOLTAGE')
+
+        self._add_edge(n1, n2, ctor(name, controlling_element, scaling_factor))
 
     def find_edge_by_elem_symbol(self, symbol: sympy.Symbol) -> Edge:
         for edge in self.edges:

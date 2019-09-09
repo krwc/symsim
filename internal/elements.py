@@ -87,35 +87,15 @@ class VoltageSource(Source):
         return 0
 
 
-DEPENDENT_VARS = {
-    'I': sympy.Function('I'),
-    'V': sympy.Function('V'),
-}
-
-class DependentValue:
-    class Current:
-        def __init__(self, element: Element):
-            if not isinstance(element, Passive) and \
-                not isinstance(element, CurrentSource):
-                raise ValueError('Current can be measured only on passive devices and current sources')
-            self.symbol = element.symbol
-
-    class Voltage:
-        def __init__(self, element: Element):
-            if not isinstance(element, Passive) and \
-                not isinstance(element, VoltageSource):
-                raise ValueError('Voltage can be measured only on passive devices and voltage sources')
-            self.symbol = element.symbol
-
 class DependentCurrentSource(Source):
-    def __init__(self, name: str, dependent_value: DependentValue, scaling_factor: str = '1'):
+    def __init__(self, name: str, controlling_element: str, scaling_factor: str = '1'):
         super().__init__(name)
-        self._dependent_value = dependent_value
+        self._controlling_element = controlling_element
         self._scaling_factor = sympy.sympify(scaling_factor)
 
     @property
-    def dependent_value(self):
-        return self._dependent_value
+    def controlling_element(self):
+        return self._controlling_element
 
     @property
     def scaling_factor(self):
@@ -123,8 +103,18 @@ class DependentCurrentSource(Source):
 
     @property
     def voltage_controlled(self):
-        return isinstance(self.dependent_value, DependentValue.Voltage)
+        raise NotImplementedError
 
     @property
     def current_controlled(self):
-        return isinstance(self.dependent_value, DependentValue.Current)
+        raise NotImplementedError
+
+
+class CurrentControlledCurrentSource(DependentCurrentSource):
+    def __init__(self, name, controlling_element, scaling_factor):
+        super().__init__(name, controlling_element, scaling_factor)
+
+
+class VoltageControlledCurrentSource(DependentCurrentSource):
+    def __init__(self, name, controlling_element, scaling_factor):
+        super().__init__(name, controlling_element, scaling_factor)

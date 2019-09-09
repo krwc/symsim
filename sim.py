@@ -6,17 +6,16 @@ import collections
 import io
 import re
 
-import elements as elem
 import network as net
 import solver
 
 SUPPORTED_COMPONENTS = {
-    'R': elem.Resistor,
-    'L': elem.Inductor,
-    'C': elem.Capacitor,
-    'I': elem.CurrentSource,
-    'V': elem.VoltageSource,
-    'G': elem.DependentCurrentSource,
+    'R': net.Network.add_resistor,
+    'L': net.Network.add_inductor,
+    'C': net.Network.add_capacitor,
+    'I': net.Network.add_current_source,
+    'V': net.Network.add_voltage_source,
+    'G': net.Network.add_dependent_current_source,
 }
 
 def parse_print(line: str) -> str:
@@ -25,13 +24,13 @@ def parse_print(line: str) -> str:
         raise ValueError('`print` command without argument.')
     return line[len('print'):]
 
-def get_element_class(element: str) -> elem.Element:
+def get_element_adder(element: str):
     if not element[0].upper() in SUPPORTED_COMPONENTS:
         raise ValueError('Unsupported element: %s' % element)
 
     return SUPPORTED_COMPONENTS[element[0].upper()]
 
-def parse_edge(line: str) -> net.Edge:
+def parse_network_defn(net: net.Network, line: str):
     """
     Every edge has the following form:
 
@@ -44,10 +43,11 @@ def parse_edge(line: str) -> net.Edge:
     name = items[0]
     n1 = items[1]
     n2 = items[2]
-    elem_class = get_element_class(name)
-    ctor_args = [ name ]
+    elem_adder = get_element_adder(name)
+    args = [ n1, n2, name ]
 
-    if elem_class == elem.DependentCurrentSource:
+    if name == 'G':
+        # NOTE: This is a dependent current source
         if len(items) < 4:
             raise ValueError('Incorrect format of a dependent current source')
 
@@ -58,16 +58,16 @@ def parse_edge(line: str) -> net.Edge:
 
         element = match.group(1).strip()
         scaling_factor = match.group(2).strip()
-        element_instance = get_element_class(element)(element)
         # append controlling value
         if items[3][0] == 'I':
-            ctor_args.append(elem.DependentValue.Current(element_instance))
-        elif items[3][0] == 'V':
-            ctor_args.append(elem.DependentValue.Voltage(element_instance))
+            args.append(net.Network.Quantity.CURRENT)
+        else:
+            args.append(net.Network.Quantity.VOLTAGE)
 
-        ctor_args.append(scaling_factor)
+        args.append(element)
+        args.append(scaling_factor)
 
-    return net.Edge(n1, n2, elem_class(*ctor_args))
+    elem_adder(net, *args)
 
 def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
     result = net.Network()
@@ -87,7 +87,7 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
             if line.startswith('print'):
                 print_commands.append(parse_print(line))
             else:
-                result.add_edge(parse_edge(line))
+                parse_network_defn(result, line)
         except ValueError as e:
             print('Parse error at line %d:\n>> %s\n%s' % (i + 1, line, e))
             raise

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sympy
-import elements as elem
+from internal import elements as elem
 
 from network import Network
 
@@ -54,14 +54,15 @@ def solve_system(net: Network):
 
                 u, v, symbol = edge
                 # TODO: support sources.
-                assert isinstance(symbol, elem.Passive)
+                if not isinstance(symbol, elem.Passive):
+                    raise ValueError('Cannot measure current or voltage through non-passives')
 
-                if element.current_controlled:
+                if isinstance(element, elem.CurrentControlledCurrentSource):
                     # i = (V_u - V_v) / Z * coeffcient
                     # i = coeff/Z * V_u - coeff/Z * V_v
                     g = element.scaling_factor / symbol.impedance
                 else:
-                    assert element.voltage_controlled
+                    assert isinstance(element, elem.VoltageControlledCurrentSource)
                     # i = (V_u - V_z) * coefficient
                     g = element.scaling_factor
 
