@@ -86,5 +86,13 @@ class SmallCaseNames(Test.Base):
 
     OUT = {'1': 'v1'}
 
+class StringNodeNames(Test.Base):
+    IN = """
+    r1 0 node1
+    v1 0 node1
+    """
+
+    OUT = {'node1': 'v1'}
+
 if __name__ == '__main__':
     unittest.main()
