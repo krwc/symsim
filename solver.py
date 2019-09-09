@@ -77,7 +77,7 @@ def solve_system(net: Network):
     voltage_per_node[net.ground_node] = sympy.sympify('0')
 
     for x in elem_index:
-        if not isinstance(x, int):
+        if x not in net.nodes:
             continue
         voltage_per_node[x] = solution[elem_index[x]].simplify()
 

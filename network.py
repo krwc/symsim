@@ -5,7 +5,10 @@ import sympy
 import elements as elem
 
 class Edge(collections.namedtuple('Edge', ['u', 'v', 'element'])):
-    pass
+    def __new__(cls, u, v, element: elem.Element):
+        assert isinstance(element, elem.Element)
+        self = super().__new__(cls, str(u), str(v), element)
+        return self
 
 
 class Network:
@@ -14,7 +17,6 @@ class Network:
         self._edges = set()
         self._nodes = set()
         self._symbols = set()
-        self._ground_node = None
         self._incident_edges_of_node = collections.defaultdict(list)
 
     def add_edge(self, elem: Edge):
@@ -25,10 +27,6 @@ class Network:
             return
 
         u, v, _ = elem
-        if self._ground_node == None:
-            self._ground_node = min(u, v)
-        else:
-            self._ground_node = min(self._ground_node, min(u, v))
 
         self._nodes.add(u)
         self._nodes.add(v)
@@ -57,9 +55,11 @@ class Network:
 
     @property
     def ground_node(self):
-        if self._ground_node is None:
-            raise ValueError("Set is empty, thus there is no ground node")
-        return self._ground_node
+        GROUND_NODE = '0'
+        if GROUND_NODE in self._nodes:
+            return GROUND_NODE
+
+        raise ValueError("Set is empty, thus there is no ground node")
 
     def incident_edges(self, node):
         return self._incident_edges_of_node[node]

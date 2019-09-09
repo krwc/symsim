@@ -28,7 +28,7 @@ class VoltageSourceParalelWithResistor(Test.Base):
     R1 0 1
     V1 1 0
     """
-    OUT = {1: "-V1"}
+    OUT = {'1': "-V1"}
 
 
 class VoltageSourceBetweenTwoResistors(Test.Base):
@@ -38,7 +38,7 @@ class VoltageSourceBetweenTwoResistors(Test.Base):
     R2 2 0
     """
 
-    OUT = {1: "-R1 * V3 / (R1 + R2)"}
+    OUT = {'1': "-R1 * V3 / (R1 + R2)"}
 
 
 class CurrentSource(Test.Base):
@@ -48,7 +48,7 @@ class CurrentSource(Test.Base):
     R2 2 0
     """
 
-    OUT = {1: "I1*(R1 + R2)", 2: "I1*R2"}
+    OUT = {'1': "I1*(R1 + R2)", '2': "I1*R2"}
 
 
 class CurrentSourcePushingToGround(Test.Base):
@@ -57,7 +57,7 @@ class CurrentSourcePushingToGround(Test.Base):
     R1 1 0
     """
 
-    OUT = {1: "-I1*R1"}
+    OUT = {'1': "-I1*R1"}
 
 class CurrentSourcePullingFromGround(Test.Base):
     IN = """
@@ -65,7 +65,7 @@ class CurrentSourcePullingFromGround(Test.Base):
     R1 1 0
     """
 
-    OUT = {1: "I1*R1"}
+    OUT = {'1': "I1*R1"}
 
 class VoltageSourceRlc(Test.Base):
     IN = """
@@ -75,8 +75,8 @@ class VoltageSourceRlc(Test.Base):
     R2 2 0
     """
 
-    OUT = {1: "-L1*V3*s/(L1*s + R2*(C1*L1*s**2 + 1))",
-           2: "R2*V3*(C1*L1*s**2 + 1)/(L1*s + R2*(C1*L1*s**2 + 1))"}
+    OUT = {'1': "-L1*V3*s/(L1*s + R2*(C1*L1*s**2 + 1))",
+           '2': "R2*V3*(C1*L1*s**2 + 1)/(L1*s + R2*(C1*L1*s**2 + 1))"}
 
 class SmallCaseNames(Test.Base):
     IN = """
@@ -84,7 +84,7 @@ class SmallCaseNames(Test.Base):
     v1 0 1
     """
 
-    OUT = {1: 'v1'}
+    OUT = {'1': 'v1'}
 
 if __name__ == '__main__':
     unittest.main()

@@ -42,8 +42,8 @@ def parse_edge(line: str) -> net.Edge:
     """
     items = line.split()
     name = items[0]
-    n1 = int(items[1])
-    n2 = int(items[2])
+    n1 = items[1]
+    n2 = items[2]
     elem_class = get_element_class(name)
     ctor_args = [ name ]
 
@@ -112,7 +112,7 @@ def _main():
     table_headers = ['Quantity', 'Value']
     table_rows = []
     for node in voltages:
-        table_rows.append(['V(%d)' % node, voltages[node].expand().simplify()])
+        table_rows.append(['V(%s)' % node, voltages[node].expand().simplify()])
 
     for sym in currents:
         table_rows.append(['I(%s)' % sym, currents[sym].expand().simplify()])
