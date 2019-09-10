@@ -12,6 +12,7 @@ class Network:
         self._edges = set()
         self._nodes = set()
         self._symbols = set()
+        self._unique_node_id = 0
         self._incident_edges_of_node = collections.defaultdict(list)
 
     def _add_edge(self, n1, n2, element: elem.Element):
@@ -26,6 +27,13 @@ class Network:
         self._incident_edges_of_node[n2] += [edge]
         self._edges.add(edge)
         self._symbols.add(edge.element.symbol)
+
+    def _gen_unique_node(self):
+        while True:
+            node = 'n_%05d' % self._unique_node_id
+            self._unique_node_id += 1
+            if node not in self._nodes:
+                return node
 
     def add_resistor(self, n1, n2, name):
         self._add_edge(n1, n2, elem.Resistor(name))
@@ -51,14 +59,25 @@ class Network:
                                      controlling_element: str,
                                      scaling_factor: float = 1.0):
         ctor = None
-        if controlling_quantity == Quantity.CURRENT:
+        if controlling_quantity == Network.Quantity.CURRENT:
             ctor = elem.CurrentControlledCurrentSource
-        elif controlling_quantity == Quantity.VOLTAGE:
+        elif controlling_quantity == Network.Quantity.VOLTAGE:
             ctor = elem.VoltageControlledCurrentSource
         else:
             raise ValueError('Expected either Quantity.CURRENT or Quantity.VOLTAGE')
 
         self._add_edge(n1, n2, ctor(name, controlling_element, scaling_factor))
+
+    def add_bjt(self, nb, ne, nc, name, ro=True):
+        rm_id = '%s_rm' % name
+        ro_id = '%s_ro' % name
+        ic_id = '%s_Ic' % name
+        alpha_id = '%s_alpha' % name
+
+        self.add_resistor(nb, ne, rm_id)
+        if ro:
+            self.add_resistor(nc, ne, ro_id)
+        self.add_dependent_current_source(nc, nb, ic_id, Network.Quantity.CURRENT, rm_id, alpha_id)
 
     def find_edge_by_elem_symbol(self, symbol: sympy.Symbol) -> Edge:
         for edge in self.edges:

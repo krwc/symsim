@@ -48,7 +48,7 @@ def solve_system(net: Network):
                 G[elem_index[element.symbol], elem_index[node]] = polarity
                 b[elem_index[element.symbol]] = element.value
             elif isinstance(element, elem.DependentCurrentSource):
-                edge = net.find_edge_by_elem_symbol(element.dependent_value.symbol)
+                edge = net.find_edge_by_elem_symbol(element.controlling_element)
                 if not edge:
                     raise ValueError('Reference to an unknown element %s' % element.dependent_value)
 
@@ -67,9 +67,9 @@ def solve_system(net: Network):
                     g = element.scaling_factor
 
                 if u is not ground_node:
-                    G[row, elem_index[u]] += g
+                    G[row, elem_index[u]] += polarity*g
                 if v is not ground_node:
-                    G[row, elem_index[v]] -= g
+                    G[row, elem_index[v]] -= polarity*g
             else:
                 raise NotImplementedError
 

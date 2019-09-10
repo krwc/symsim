@@ -16,6 +16,7 @@ SUPPORTED_COMPONENTS = {
     'I': net.Network.add_current_source,
     'V': net.Network.add_voltage_source,
     'G': net.Network.add_dependent_current_source,
+    'Q': net.Network.add_bjt,
 }
 
 def parse_print(line: str) -> str:
@@ -46,7 +47,7 @@ def parse_network_defn(net: net.Network, line: str):
     elem_adder = get_element_adder(name)
     args = [ n1, n2, name ]
 
-    if name == 'G':
+    if name[0].upper() == 'G':
         # NOTE: This is a dependent current source
         if len(items) < 4:
             raise ValueError('Incorrect format of a dependent current source')
@@ -66,6 +67,12 @@ def parse_network_defn(net: net.Network, line: str):
 
         args.append(element)
         args.append(scaling_factor)
+    elif name[0].upper() == 'Q':
+        # NOTE: This is a BJT.
+        if len(items) != 4:
+            raise ValueError('Incorrect format of a BJT')
+        n3 = items[3]
+        args = [ n1, n2, n3, name ]
 
     elem_adder(net, *args)
 
@@ -106,7 +113,7 @@ def _main():
         raise ValueError("No current information for %s" % symbol)
 
     def V(node):
-        return voltages[node]
+        return voltages[str(node)]
 
     from tabulate import tabulate
     table_headers = ['Quantity', 'Value']

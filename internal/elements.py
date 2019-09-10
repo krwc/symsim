@@ -90,7 +90,7 @@ class VoltageSource(Source):
 class DependentCurrentSource(Source):
     def __init__(self, name: str, controlling_element: str, scaling_factor: str = '1'):
         super().__init__(name)
-        self._controlling_element = controlling_element
+        self._controlling_element = sympy.sympify(controlling_element)
         self._scaling_factor = sympy.sympify(scaling_factor)
 
     @property
@@ -100,15 +100,6 @@ class DependentCurrentSource(Source):
     @property
     def scaling_factor(self):
         return self._scaling_factor
-
-    @property
-    def voltage_controlled(self):
-        raise NotImplementedError
-
-    @property
-    def current_controlled(self):
-        raise NotImplementedError
-
 
 class CurrentControlledCurrentSource(DependentCurrentSource):
     def __init__(self, name, controlling_element, scaling_factor):
