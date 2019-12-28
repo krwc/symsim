@@ -83,7 +83,7 @@ class Network:
         #             o E
         gm_id = 'Gm_%s' % name
         ro_id = 'Ro_%s' % name
-        rpi_id = 'Rπ_%s' % name
+        rpi_id = 'Rp_%s' % name
         ic_id = 'Ic_%s' % name
 
         self.add_resistor(nb, ne, rpi_id)
