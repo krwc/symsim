@@ -130,7 +130,8 @@ def _main():
     }
     for p in prints:
         result = sympy.sympify(p, locals=locals)
-        table_rows.append(['%s' % p, result.expand().simplify()])
+        # ratio=1 -> don't allow the expression to get too long.
+        table_rows.append(['%s' % p, result.expand().simplify(ratio=1)])
 
     print(tabulate(table_rows, table_headers, tablefmt='psql'))
 

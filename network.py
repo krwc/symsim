@@ -69,15 +69,28 @@ class Network:
         self._add_edge(n1, n2, ctor(name, controlling_element, scaling_factor))
 
     def add_bjt(self, nb, ne, nc, name, ro=True):
-        rm_id = '%s_rm' % name
-        ro_id = '%s_ro' % name
-        ic_id = '%s_Ic' % name
-        alpha_id = '%s_alpha' % name
+        # We use a g_m * v_pi dependent current source.
+        #
+        # B                                     C
+        # o-----.            .-------------.----o
+        #     + |            |             |
+        #       \           / \            \
+        #  v_pi / r_pi      \ / gm*v_pi    / ro
+        #       \            |             \
+        #     - |            |             |
+        #       `-----.------`-------------`
+        #             |
+        #             o E
+        gm_id = 'Gm_%s' % name
+        ro_id = 'Ro_%s' % name
+        rpi_id = 'Rπ_%s' % name
+        ic_id = 'Ic_%s' % name
 
-        self.add_resistor(nb, ne, rm_id)
+        self.add_resistor(nb, ne, rpi_id)
         if ro:
             self.add_resistor(nc, ne, ro_id)
-        self.add_dependent_current_source(nc, nb, ic_id, Network.Quantity.CURRENT, rm_id, alpha_id)
+
+        self.add_dependent_current_source(nc, ne, ic_id, Network.Quantity.VOLTAGE, rpi_id, gm_id)
 
     def find_edge_by_elem_symbol(self, symbol: sympy.Symbol) -> Edge:
         for edge in self.edges:
