@@ -25,6 +25,14 @@ def parse_print(line: str) -> str:
         raise ValueError('`print` command without argument.')
     return line[len('print'):]
 
+def parse_subst(line: str) -> (str, sympy.Symbol):
+    assert line.startswith('subst')
+    args = line[len('subst '):].split()
+    if len(args) < 2:
+        raise ValueError('`subst` command without arguments.')
+
+    return (args[0], sympy.sympify(' '.join(args[1:])))
+
 def get_element_adder(element: str):
     if not element[0].upper() in SUPPORTED_COMPONENTS:
         raise ValueError('Unsupported element: %s' % element)
@@ -79,6 +87,7 @@ def parse_network_defn(out_net: net.Network, line: str):
 def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
     result = net.Network()
     print_commands = []
+    subst_commands = {}
 
     for i, line in enumerate(io.StringIO(input) if input else sys.stdin):
         line = line.strip()
@@ -93,19 +102,21 @@ def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
         try:
             if line.startswith('print'):
                 print_commands.append(parse_print(line))
+            elif line.startswith('subst'):
+                sub, to = parse_subst(line)
+                subst_commands[sub] = to
             else:
                 parse_network_defn(result, line)
         except ValueError as e:
             print('Parse error at line %d:\n>> %s\n%s' % (i + 1, line, e))
             raise
 
-    return result, print_commands
+    return result, print_commands, subst_commands
 
 
 def _main():
-    net, prints = parse_network()
+    net, prints, substs = parse_network()
     voltages, currents = solver.solve_system(net)
-    substitutions = {}
 
     def I(symbol):
         if symbol in currents:
@@ -129,7 +140,7 @@ def _main():
         'V': V,
     }
     for p in prints:
-        result = sympy.sympify(p, locals=locals)
+        result = sympy.sympify(p, locals=locals).subs(substs)
         # ratio=1 -> don't allow the expression to get too long.
         table_rows.append(['%s' % p, result.expand().simplify(ratio=1)])
 
