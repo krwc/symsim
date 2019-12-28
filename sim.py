@@ -31,7 +31,7 @@ def get_element_adder(element: str):
 
     return SUPPORTED_COMPONENTS[element[0].upper()]
 
-def parse_network_defn(net: net.Network, line: str):
+def parse_network_defn(out_net: net.Network, line: str):
     """
     Every edge has the following form:
 
@@ -74,7 +74,7 @@ def parse_network_defn(net: net.Network, line: str):
         n3 = items[3]
         args = [ n1, n2, n3, name ]
 
-    elem_adder(net, *args)
+    elem_adder(out_net, *args)
 
 def parse_network(input: str = None) -> (net.Network, 'PrintCommands'):
     result = net.Network()
