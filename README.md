@@ -1,4 +1,4 @@
-# Symbolic small singal analysis tool
+# Symbolic small signal analysis tool
 
 This tool was created to help with (often lengthy) symbolic small-signal calculations
 on circuits. It may be used to verify hand-made calculations, or to completely replace
