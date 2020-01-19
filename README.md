@@ -1,7 +1,9 @@
 # Symbolic small singal analysis tool
 
-This tool was created to help with (often lengthy) symbolic small-signal calculations on
-circuits. It may be used to verify hand-made calculations, or to completely replace them.
+This tool was created to help with (often lengthy) symbolic small-signal calculations
+on circuits. It may be used to verify hand-made calculations, or to completely replace
+them. Unfortunately it is still in very early stage, and even though it can calculate most things
+symbolically, the results are quite hard to read due to lack of advanced simplification techniques.
 
 It supports passive elements (including inductors and capacitors), dependent current sources,
 which is more than enough for most applications -- including transistor circuits.
@@ -22,8 +24,8 @@ We wish to calculate the voltage `Vout` with respect to `Vin` as in the image be
 
 ![voltage_divider](https://github.com/sznaider/symsim/blob/master/doc/divider.png)
 
-Of course, we know it is `Vout = R2 / (R1 + R2) * Vin`. To perform calculations with
-this tool, we create the following input (let's say, saved to `divider.txt`):
+Of course, we know it is `Vout = R2 / (R1 + R2) * Vin`. To perform calculations with this tool,
+we create the following input (let's say, saved to `divider.txt`):
 
 ```
 Vin 0 a
@@ -31,15 +33,15 @@ R1 a out
 R2 out 0
 ```
 
-In this file, we basically defined a cyclic graph. It has three nodes `0` (which is a reserved
+In this file, we essentially defined a cyclic graph. It has three nodes `0` (which is a reserved
 name for ground), `a` and `out`. Edge `(0, a)` is tagged with a voltage source `Vin`, edge `(a,
 out)` is tagged with resistor `R1` and so on.
 
-Basically, this is how network definition looks like. Components' first letter define the type
-of component we wish to add to our circuit. Following letters let us to specify the component
+Basically, this is how network definition looks like. Component's first letter defines the type
+of a component we wish to add to our circuit. Following letters let us to specify the component's
 name (for example: `R1` is a resistor with `1` as its name).
 
-Anyway, we may now run the simulator and get results in form of a table:
+Knowing all of that, we may now run the simulator and get results in form of a table:
 ```
 $ python sim.py < divider.txt
 +------------+------------------+
@@ -54,7 +56,7 @@ $ python sim.py < divider.txt
 +------------+------------------+
 ```
 
-Unsurprisingly, Vout (in the table it's `V(out)`) has the expected value.
+Unsurprisingly, `Vout` (in the table it's `V(out)`) has the expected value.
 
 ## Transistor circuits and small signal analysis
 
@@ -62,7 +64,7 @@ This is where, I think, the tool could be most useful. The small signal analysis
 circuits is a powerful tool allowing to predict circuit behavior in response to small input
 fluctuations.
 
-Naturally, circuit simulators like Spice support small signal analysis. The problem with this
+Naturally, circuit simulators like Spice support small signal analysis. The problem with them
 is that they do it by computing circuit's operating point, and to have an actually meaningful
 analytical results, one has to simulate circuit along with its entire (and possibly complex)
 biasing arrangement, **which is exactly what you don't need to do if you're using this tool**.
@@ -72,10 +74,10 @@ Early-effect output resistances and so on, symbolically, leaving their interpret
 
 Of course, the family of Spice simulators are accurate, they use complex physical models, and
 thus, if your intention is to do a proper circuit analysis, in hope that the circuit works in
-real world it'd be best if you used them instead of this tool. The tool merely uses a first
-order small signal model, as it is currently teached in most textbooks.
+real world it'd be best if you used them instead of this tool. This program merely uses a first
+order small signal model, as it is currently being teached in most electronics textbooks.
 
-As always, illustrating what it can do, and what it can't is best illustrated in examples.
+As always, illustrating what it can do, and what it can't, is best illustrated in examples.
 
 ### Input / output resistances of a single transistor.
 
@@ -88,9 +90,9 @@ finite base resistance in final results and replace them with equivalents for yo
 
 ![base_resistance](https://github.com/sznaider/symsim/blob/master/doc/input_resistance.png)
 
-To calculate `Req` we'll put a voltage source `Vx`, at the base and measure current through
+To calculate `Req` we'll put a voltage source `Vx` at the base and measure current through
 it. (Note that the picture above already shows a small-signal model somewhat superimposed on
-the actual circuit - i.e. both emitter and collector are AC grounds).
+the actual circuit).
 
 ```
 Vx 0 base
@@ -144,7 +146,7 @@ resulting in:
 +--------------------+----------+
 ```
 
-And finally, perhaps the most interesting is a resistance looking into emitter (which is a parallel
+And finally, the most interesting is a resistance looking into emitter (which is a parallel
 combination of approximately `1/gm` and `R_o`):
 
 ![emitter_resistance](https://github.com/sznaider/symsim/blob/master/doc/emitter_resistance.png)
@@ -211,7 +213,6 @@ which results in:
 ```
 
 in other words, the gain is equal to `-gm * (Rc||ro)`, which is what we expect.
-
 
 ### Gain of the common-emitter with degeneration
 
