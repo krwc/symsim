@@ -77,10 +77,15 @@ def parse_network_defn(out_net: net.Network, line: str):
         args.append(scaling_factor)
     elif name[0].upper() == 'Q':
         # NOTE: This is a BJT.
-        if len(items) != 4:
+        if len(items) < 4 or len(items) > 5:
             raise ValueError('Incorrect format of a BJT')
         n3 = items[3]
-        args = [ n1, n2, n3, name ]
+        ro = True
+        if len(items) == 5 and items[-1] == 'noro':
+            # do not take ro into account
+            ro = False
+
+        args = [ n1, n2, n3, name, ro ]
 
     elem_adder(out_net, *args)
 

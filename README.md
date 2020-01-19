@@ -86,9 +86,9 @@ finite base resistance in final results and replace them with equivalents for yo
 
 ### Resistance looking into the base of a BJT
 
-![input_resistance](https://github.com/sznaider/symsim/blob/master/doc/input_resistance.png)
+![base_resistance](https://github.com/sznaider/symsim/blob/master/doc/input_resistance.png)
 
-To calculate `Rin` we'll put a voltage source `Vx`, at the base and measure current through
+To calculate `Req` we'll put a voltage source `Vx`, at the base and measure current through
 it. (Note that the picture above already shows a small-signal model somewhat superimposed on
 the actual circuit - i.e. both emitter and collector are AC grounds).
 
@@ -113,12 +113,15 @@ The results are:
 +---------------+----------+
 ```
 
-and our quantity is calculated to be `Rp_Q1` which is a R-pi (from [small signal π
-model](https://en.wikipedia.org/wiki/Hybrid-pi_model)).
+and our quantity is calculated to be `Rp_Q1` which is a small-signal base resistance (from
+[small signal π model](https://en.wikipedia.org/wiki/Hybrid-pi_model)).
 
 ### Resistance looking into the collector and emitter of the BJT
 
 Similarly we can calculate resistance looking into the collector:
+
+![collector_resistance](https://github.com/sznaider/symsim/blob/master/doc/collector_resistance.png)
+
 ```
 Vx 0 collector
 Q1 0 0 collector
@@ -143,6 +146,8 @@ resulting in:
 
 And finally, perhaps the most interesting is a resistance looking into emitter (which is a parallel
 combination of approximately `1/gm` and `R_o`):
+
+![emitter_resistance](https://github.com/sznaider/symsim/blob/master/doc/emitter_resistance.png)
 
 ```
 Vx 0 emitter
@@ -173,6 +178,111 @@ to see equivalence:
 = 1/(1/Re_Q1 + 1/Ro_Q1) = (Re_Q1 || Ro_Q1) ~= (1/gm_Q1 || Ro_Q1).
 ```
 
+### Simple common-emitter amplifier gain calculation
+
+Finally, let's calculate something more interesting. Namely the small-signal gain of the
+common-emitter stage:
+
+![common_emitter](https://github.com/sznaider/symsim/blob/master/doc/common_emitter.png)
+
+```
+Vin 0 base
+Q1 base 0 collector
+Rc 0 collector
+
+print V(collector) / Vin
+```
+
+which results in:
+
+```
++--------------------+----------------------------------+
+| Quantity           | Value                            |
+|--------------------+----------------------------------|
+| V(0)               | 0                                |
+| V(base)            | Vin                              |
+| V(collector)       | -Gm_Q1*Rc*Ro_Q1*Vin/(Rc + Ro_Q1) |
+| I(Vin)             | Vin/Rp_Q1                        |
+| I(Rp_Q1)           | Vin/Rp_Q1                        |
+| I(Ro_Q1)           | -Gm_Q1*Rc*Vin/(Rc + Ro_Q1)       |
+| I(Rc)              | Gm_Q1*Ro_Q1*Vin/(Rc + Ro_Q1)     |
+| V(collector) / Vin | -Gm_Q1*Rc*Ro_Q1/(Rc + Ro_Q1)     |
++--------------------+----------------------------------+
+```
+
+in other words, the gain is equal to `-gm * (Rc||ro)`, which is what we expect.
+
+
+### Gain of the common-emitter with degeneration
+
+In the previous section we did not take into the account a typical arrangement in which resistor
+is added to the emitter of a common-emitter stage for stability and better gain control.
+
+Here's our new circuit to analyze:
+
+![degenerated_common_emitter](https://github.com/sznaider/symsim/blob/master/doc/degenerated_common_emitter.png)
+
+Studying transistor amplifiers, we know that the exact gain formula of such stage can be quite
+overwhelming. In any case, we can compute it exactly with this program:
+
+```
+Vin 0 base
+Q1 base emitter collector
+Rc 0 collector
+Re emitter 0
+
+print V(collector) / Vin
+```
+
+and the results are:
+```
+...
++--------------------+---------------------------------------------------------------------------------------------------------------------------+
+| V(collector) / Vin | Rc*(-Gm_Q1*Ro_Q1*Rp_Q1 + Re)/(Gm_Q1*Re*Ro_Q1*Rp_Q1 + Rc*Re + Rc*Rp_Q1 + Re*Ro_Q1 + Re*Rp_Q1 + Ro_Q1*Rp_Q1)                |
++--------------------+---------------------------------------------------------------------------------------------------------------------------+
+```
+
+which indeed does not look friendly. Perhaps in this case the more useful thing would be to
+get a gain in a numerical form. We can tell the simulator to do that for us with the help of
+`set` command.
+
+We may substitute any symbol with a numerical value. In this example, we'll specify all unknowns
+to get the numerical result:
+
+```
+Vin 0 base
+Q1 base emitter collector
+Rc 0 collector
+Re emitter 0
+
+# 40mS - typical value when about 1mA is flowing through a collector of a BJT at room temperature
+set Gm_Q1 40e-3
+
+# Say the Early voltage is 100, and the current flowing is 1mA
+# then Va/Ic gives 100kilo-ohms
+set Ro_Q1 100e3
+
+# Now, we specify the transistor's base resistance, assumming Beta = 100, for the results
+# to make sense we need to set Rp_Q1 = Beta/gm, thus in this case it need to be 100/40e-3 =
+# 2.5kilo-ohms. Admittedly, this is not an ideal way of providing this parameter - something
+# to be improved # in the future.
+set Rp_Q1 2.5e3
+
+# Let's set some values for Rc and Re. Let Rc=10kOhm, Re=50Ohm. We expect
+# the gain of roughly -(Rc||ro)/(Re + 1/gm) ~= -120.
+set Rc 10e3
+set Re 50
+
+print V(collector) / Vin
+```
+
+And, after providing this as an input to the simulator we get:
+```
+V(collector) / Vin | -128.101841473179
+```
+
+which is close to the result we anticipated.
+
 # All supported components and their definitions
 
 **Definition**: `[name]` used below means a word. That is a sequence of non-whitespace characters.
@@ -184,6 +294,7 @@ to see equivalence:
 - Independent current sources: `I[name] node1 node2`
 - Current controlled current source: `G[name] node1 node2 I(component) scaling-factor`
 - Voltage controlled current source: `G[name] node1 node2 V(component) scaling-factor`
+- Transistor: `Q[name] base emitter collector optional-'noro' to set ro to infinity`
 
 Some explanations are in order. First of all, whenever we say `I(component)` or `V(component)` it means
 the current / voltage at given component. The polarity is determined from component's definition - i.e.
@@ -204,7 +315,7 @@ You can tell the simulator to calculate some quantity in addition to all quantit
 calculates. The calculated quantity is symbolically manipulated and simplified so that you
 don't have to perform tedious algebra on your own. The syntax is supposed to be simple, e.g.:
 
-    `print V(out) / Vin`
+    print V(out) / Vin
 
 which tells the program to calculate the voltage at node `out` and divde it by the value of
 voltage source `Vin`.
@@ -215,7 +326,7 @@ Apart from symbolic calculations, sometimes we'd wish to have some real numbers 
 Since the results are known symbolically it's just a matter of substituting values. We can
 substitute values with `set` commands, e.g.:
 
-    `set R1 1000`
+    set R1 1000
 
 which sets the `R1` to 1000 ohms. All ocurrences of `R1` are then replaced with `1000`.
 
