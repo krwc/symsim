@@ -215,8 +215,8 @@ in other words, the gain is equal to `-gm * (Rc||ro)`, which is what we expect.
 
 ### Gain of the common-emitter with degeneration
 
-In the previous section we did not take into the account a typical arrangement in which resistor
-is added to the emitter of a common-emitter stage for stability and better gain control.
+In the previous section we did not take into the account the typical arrangement in which a
+resistor is added to the emitter of a common-emitter stage for stability and better gain control.
 
 Here's our new circuit to analyze:
 
@@ -243,11 +243,11 @@ and the results are:
 ```
 
 which indeed does not look friendly. Perhaps in this case the more useful thing would be to
-get a gain in a numerical form. We can tell the simulator to do that for us with the help of
-`set` command.
+get a gain in a numerical form. We can get numerical results if we provide the values of
+components we used in the circuit. This can be achieved with the `set` command.
 
 We may substitute any symbol with a numerical value. In this example, we'll specify all unknowns
-to get the numerical result:
+to get the gain numerically:
 
 ```
 Vin 0 base
@@ -276,7 +276,7 @@ set Re 50
 print V(collector) / Vin
 ```
 
-And, after providing this as an input to the simulator we get:
+And, feeding this to the simulator, we get:
 ```
 V(collector) / Vin | -128.101841473179
 ```
