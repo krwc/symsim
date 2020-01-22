@@ -14,6 +14,15 @@ be used).
 
 # How to use it?
 
+## Dependencies installation
+
+Simply run:
+
+    pip install -r requirements.txt
+
+
+## Input
+
 You need to provide your circuit in a text format to standard input of the `sim.py`. In response
 a table will be printed containing all currents and voltages computed in the circuit. It's best
 to take a look at the examples.
